@@ -90,14 +90,74 @@
 ## **7\. Data Model**
 
 Entities: **User, Student, Application, Document, Notification, Program**  
+
+### **Entity Schemas**
+
+#### **User**
+| Field         | Type        | Constraints                | Validation/Notes                |
+|---------------|------------|----------------------------|---------------------------------|
+| id            | UUID       | PK, unique, not null       | Auto-generated                  |
+| email         | String     | unique, not null           | Valid email format              |
+| password_hash | String     | not null                   | Hashed, min 8 chars             |
+| role          | Enum       | not null                   | 'student', 'admin'              |
+| created_at    | Timestamp  | not null, default now()    |                                 |
+| updated_at    | Timestamp  | not null, auto-updated     |                                 |
+
+#### **Student**
+| Field         | Type        | Constraints                | Validation/Notes                |
+|---------------|------------|----------------------------|---------------------------------|
+| id            | UUID       | PK, unique, not null       | Auto-generated                  |
+| user_id       | UUID       | unique, FK → User(id)      | 1:1 with User                   |
+| first_name    | String     | not null                   |                                 |
+| last_name     | String     | not null                   |                                 |
+| dob           | Date       | not null                   |                                 |
+| phone         | String     |                            | E.164 format                    |
+| address       | String     |                            |                                 |
+| created_at    | Timestamp  | not null, default now()    |                                 |
+| updated_at    | Timestamp  | not null, auto-updated     |                                 |
+
+#### **Application**
+| Field         | Type        | Constraints                | Validation/Notes                |
+|---------------|------------|----------------------------|---------------------------------|
+| id            | UUID       | PK, unique, not null       | Auto-generated                  |
+| student_id    | UUID       | FK → Student(id), not null |                                 |
+| program_id    | UUID       | FK → Program(id), not null |                                 |
+| status        | Enum       | not null                   | 'draft', 'submitted', 'approved', 'rejected' |
+| step          | Integer    | not null, default 1        | 1-5                             |
+| submitted_at  | Timestamp  |                            |                                 |
+| updated_at    | Timestamp  | not null, auto-updated     |                                 |
+
+#### **Document**
+| Field         | Type        | Constraints                | Validation/Notes                |
+To ensure each module remains lightweight, portable, and cost-efficient, the system is designed so that each service can be deployed independently on free-tier servers. The following section provides a deployment strategy specifically tailored to free-tier environments.
+| id            | UUID       | PK, unique, not null       | Auto-generated                  |
+| application_id| UUID       | FK → Application(id)       |                                 |
+| type          | Enum       | not null                   | 'id_card', 'transcript', etc.   |
+| url           | String     | not null                   | S3/MinIO path                   |
+| status        | Enum       | not null                   | 'pending', 'validated', 'rejected' |
+| uploaded_at   | Timestamp  | not null, default now()    |                                 |
+| validated_at  | Timestamp  |                            |                                 |
+| notes         | String     |                            | Optional, for admin comments    |
+
+#### **Notification**
+| Field         | Type        | Constraints                | Validation/Notes                |
+|---------------|------------|----------------------------|---------------------------------|
+| id            | UUID       | PK, unique, not null       | Auto-generated                  |
+| user_id       | UUID       | FK → User(id), not null    |                                 |
+| type          | Enum       | not null                   | 'email', 'sms', 'in_app'        |
+| message       | String     | not null                   |                                 |
+| read          | Boolean    | not null, default false    |                                 |
+| created_at    | Timestamp  | not null, default now()    |                                 |
+
+#### **Program**
+| Field         | Type        | Constraints                | Validation/Notes                |
+|---------------|------------|----------------------------|---------------------------------|
+| id            | UUID       | PK, unique, not null       | Auto-generated                  |
+| name          | String     | unique, not null           |                                 |
+| description   | String     |                            |                                 |
+| is_active     | Boolean    | not null, default true     |                                 |
+
  Relationships:
-
-* User ↔ Student (1:1)  
-* Student ↔ Application (1:N)  
-* Application ↔ Document (1:N)  
-* User ↔ Notification (1:N)  
-* Program ↔ Application (1:N)
-
 ---
 
 ## **8\. Usage Scenario (Etoundi Junior Example)**
@@ -139,11 +199,11 @@ That’s a smart constraint to add, Boutchouang 💡 — designing each module s
 
 * **Independence:** Each service (Auth, Enrollment, Document, Notification, Analytics) must run on its own free‑tier environment.  
 * **Lightweight footprint:** Optimize resource usage (small containers, minimal memory).  
-* **Portability:** Use Docker images so you can redeploy easily across providers.  
-* **Cost‑aware:** Leverage free tiers of cloud providers and managed services.
+This strategy enables each microservice to operate independently on a free tier, while maintaining connectivity within a distributed system. The approach is efficient, reproducible, and cost-effective until scaling is required.
 
 ---
 
+This documentation provides the necessary guidance to make the enrollment platform production-ready as a microservice and facilitates integration with other modules.
 ## **2\. Recommended Free‑Tier Platforms**
 
 | Service Type | Free‑Tier Option | Notes |
